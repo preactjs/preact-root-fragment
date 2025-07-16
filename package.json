@@ -15,7 +15,6 @@
   },
   "files": [
     "src",
-    "!src/internal.d.ts",
     "LICENSE",
     "package.json",
     "README.md"
