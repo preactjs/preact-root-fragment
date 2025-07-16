@@ -19,10 +19,23 @@
     "package.json",
     "README.md"
   ],
+  "scripts": {
+    "test": "wtr test/*.test.js"
+  },
   "peerDependencies": {
     "preact": "10.x || 11.x"
   },
   "devDependencies": {
-    "preact": "^10.26.9"
+    "@types/mocha": "^10.0.10",
+    "@types/sinon-chai": "^4.0.0",
+    "@web/dev-server-esbuild": "^1.0.4",
+    "@web/test-runner": "^0.20.2",
+    "chai": "^5.2.1",
+    "preact": "^10.26.9",
+    "sinon": "^21.0.0",
+    "sinon-chai": "^4.0.0"
+  },
+  "overrides": {
+    "@web/dev-server-core": "0.7.1"
   }
 }

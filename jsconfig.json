@@ -6,6 +6,9 @@
     "noEmit": true,
     "allowJs": true,
     "checkJs": true,
-    "skipLibCheck": false
+    "skipLibCheck": false,
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment",
   }
 }
