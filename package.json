@@ -1,0 +1,29 @@
+{
+  "name": "preact-root-fragment",
+  "version": "0.2.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js",
+    "./package.json": "./package.json"
+  },
+  "license": "MIT",
+  "description": "A standalone Preact 10+ implementation of the deprecated replaceNode parameter from Preact 10",
+  "author": "The Preact Authors (https://preactjs.com)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/preactjs/preact-root-fragment.git"
+  },
+  "files": [
+    "src",
+    "!src/internal.d.ts",
+    "LICENSE",
+    "package.json",
+    "README.md"
+  ],
+  "peerDependencies": {
+    "preact": "10.x || 11.x"
+  },
+  "devDependencies": {
+    "preact": "^10.26.9"
+  }
+}
