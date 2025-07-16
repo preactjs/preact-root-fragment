@@ -6,13 +6,11 @@ It provides a way to render or hydrate a Preact tree using a subset of the child
 
 ```html
 <body>
-  <div id="root">
-    ⬅ we pass this to render() as the parent DOM element...
+  <div id="root"> ⬅ we pass this to render() as the parent DOM element...
 
     <script src="/etc.js"></script>
 
-    <div class="app">
-      ⬅ ... but we want to use this tree, not the script
+    <div class="app"> ⬅ ... but we want to use this tree, not the script
       <!-- ... -->
     </div>
   </div>
