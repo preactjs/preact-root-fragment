@@ -26,6 +26,7 @@ export function createRootFragment(parent, replaceNode) {
         parentNode: parent,
         firstChild: replaceNode[0],
         childNodes: replaceNode,
+        ownerDocument: parent.ownerDocument,
         insertBefore: insert,
         appendChild: insert,
         removeChild: function (c) {
