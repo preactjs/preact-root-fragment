@@ -26,9 +26,18 @@ export function createRootFragment(parent, replaceNode) {
         parentNode: parent,
         firstChild: replaceNode[0],
         childNodes: replaceNode,
+        // Preact 11 creates new nodes from the container's document (iframes)
         ownerDocument: parent.ownerDocument,
+        // Root children are created in the container's namespace (e.g. SVG)
+        namespaceURI: parent.namespaceURI,
         insertBefore: insert,
         appendChild: insert,
+        // Preact 11 reorders keyed children with the state-preserving
+        // moveBefore() whenever the browser supports it
+        moveBefore: function (c, r) {
+            r = r || s;
+            return parent.moveBefore ? parent.moveBefore(c, r) : parent.insertBefore(c, r);
+        },
         removeChild: function (c) {
             return parent.removeChild(c);
         },
