@@ -23,7 +23,7 @@
     "test": "wtr test/*.test.js"
   },
   "peerDependencies": {
-    "preact": "10.x || 11.x"
+    "preact": "10.x || ^11.0.0-0"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",

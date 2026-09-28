@@ -1,4 +1,5 @@
-import { h, render, Component } from 'preact';
+import { h, render, hydrate, Fragment, Component } from 'preact';
+import { useState } from 'preact/hooks';
 import * as chai from 'chai';
 import * as sinon from 'sinon';
 import sinonChai from 'sinon-chai';
@@ -241,5 +242,174 @@ describe('createRootFragment', () => {
         expect(scratch.innerHTML).to.equal(
             '<div>New content<button>Update</button></div>'
         );
+    });
+
+    describe('siblings outside the fragment', () => {
+        const List = ({ items }) => items.map(i => <li key={i}>{i}</li>);
+        const listHtml = items =>
+            '<li id="before"></li>' +
+            items.map(i => `<li>${i}</li>`).join('') +
+            '<li id="after"></li>';
+
+        /** @returns {{ root: import('preact').ContainerNode, items: Element[] }} */
+        function setupList(items) {
+            scratch.innerHTML = listHtml(items);
+            const children = [].slice.call(scratch.children, 1, -1);
+            return { root: createRootFragment(scratch, children), items: children };
+        }
+
+        it('should not re-insert the replaced nodes on initial render', () => {
+            const { root, items } = setupList([1, 2]);
+            const observer = new MutationObserver(() => {});
+            observer.observe(scratch, { childList: true });
+
+            render(<List items={[1, 2]} />, root);
+
+            expect(observer.takeRecords()).to.have.length(0);
+            observer.disconnect();
+            expect(scratch.children[1]).to.equal(items[0]);
+            expect(scratch.children[2]).to.equal(items[1]);
+        });
+
+        it('should insert new children at the right position', () => {
+            const { root } = setupList([1, 2]);
+
+            render(<List items={[1, 2]} />, root);
+            render(<List items={[0, 1, 2]} />, root);
+            expect(scratch.innerHTML).to.equal(listHtml([0, 1, 2]));
+
+            render(<List items={[0, 1, 3, 2]} />, root);
+            expect(scratch.innerHTML).to.equal(listHtml([0, 1, 3, 2]));
+
+            render(<List items={[0, 1, 3, 2, 4]} />, root);
+            expect(scratch.innerHTML).to.equal(listHtml([0, 1, 3, 2, 4]));
+
+            render(<List items={[1, 2]} />, root);
+            expect(scratch.innerHTML).to.equal(listHtml([1, 2]));
+        });
+
+        it('should reorder keyed children', () => {
+            const { root } = setupList([1, 2, 3]);
+
+            render(<List items={[1, 2, 3]} />, root);
+            // Preact 11 moves nodes with moveBefore() where the browser supports it
+            render(<List items={[3, 1, 2]} />, root);
+            expect(scratch.innerHTML).to.equal(listHtml([3, 1, 2]));
+
+            render(<List items={[2, 3, 1]} />, root);
+            expect(scratch.innerHTML).to.equal(listHtml([2, 3, 1]));
+
+            render(<List items={[1, 2, 3]} />, root);
+            expect(scratch.innerHTML).to.equal(listHtml([1, 2, 3]));
+        });
+
+        it('should keep state of moved children where moveBefore() is supported', () => {
+            const { root } = setupList([1, 2, 3]);
+            const Inputs = ({ items }) =>
+                items.map(i => (
+                    <li key={i}>
+                        <input id={'i' + i} />
+                    </li>
+                ));
+
+            render(<Inputs items={[1, 2, 3]} />, root);
+            const input = scratch.querySelector('#i3');
+            input.focus();
+            const moveBefore = sinon.spy(root, 'moveBefore');
+
+            render(<Inputs items={[3, 1, 2]} />, root);
+            expect(scratch.children[1].firstChild).to.equal(input);
+            // Preact 10 has no moveBefore() support, only check when it is used
+            if (moveBefore.called && 'moveBefore' in Element.prototype) {
+                expect(document.activeElement).to.equal(input);
+            }
+            moveBefore.restore();
+        });
+
+        it('should add children before existing ones on state updates', async () => {
+            const { root } = setupList([1]);
+            let setItems;
+            function App() {
+                const [items, set] = useState([1]);
+                setItems = set;
+                return <List items={items} />;
+            }
+
+            render(<App />, root);
+            setItems([0, 1]);
+            await new Promise(r => setTimeout(r, 0));
+            expect(scratch.innerHTML).to.equal(listHtml([0, 1]));
+
+            setItems([1, 0]);
+            await new Promise(r => setTimeout(r, 0));
+            expect(scratch.innerHTML).to.equal(listHtml([1, 0]));
+        });
+
+        it('should hydrate without touching the DOM', async () => {
+            scratch.innerHTML = '<p id="a"></p><button>0</button><p id="c"></p>';
+            const button = scratch.children[1];
+            function Counter() {
+                const [count, setCount] = useState(0);
+                return <button onClick={() => setCount(count + 1)}>{count}</button>;
+            }
+
+            const observer = new MutationObserver(() => {});
+            observer.observe(scratch, { childList: true, subtree: true, characterData: true });
+            hydrate(<Counter />, createRootFragment(scratch, button));
+            expect(observer.takeRecords()).to.have.length(0);
+            observer.disconnect();
+
+            button.click();
+            await new Promise(r => setTimeout(r, 0));
+            expect(scratch.innerHTML).to.equal('<p id="a"></p><button>1</button><p id="c"></p>');
+            expect(scratch.children[1]).to.equal(button);
+        });
+
+        it('should render independent fragments into one parent', () => {
+            setupABCDom(scratch);
+            const a = createRootFragment(scratch, scratch.querySelector('#a'));
+            const b = createRootFragment(scratch, scratch.querySelector('#b'));
+
+            render(<div id="a">A</div>, a);
+            render(<div id="b">B</div>, b);
+            render(
+                <>
+                    <p>A0</p>
+                    <div id="a">A</div>
+                    <p>A2</p>
+                </>,
+                a
+            );
+            render(
+                <>
+                    <p>B0</p>
+                    <div id="b">B</div>
+                </>,
+                b
+            );
+            expect(scratch.innerHTML).to.equal(
+                '<p>A0</p><div id="a">A</div><p>A2</p><p>B0</p><div id="b">B</div><div id="c"></div>'
+            );
+        });
+    });
+
+    it('should create children in the namespace of the parent', () => {
+        scratch.innerHTML = '<svg><rect></rect><g></g><rect></rect></svg>';
+        const svg = scratch.firstChild;
+        const root = createRootFragment(svg, svg.children[1]);
+
+        render(
+            <g>
+                <circle r="1" />
+            </g>,
+            root
+        );
+        expect(svg.querySelector('circle').namespaceURI).to.equal(
+            'http://www.w3.org/2000/svg'
+        );
+
+        render(<circle r="2" />, root);
+        expect(svg.children[1].localName).to.equal('circle');
+        expect(svg.children[1].namespaceURI).to.equal('http://www.w3.org/2000/svg');
     });
 });
