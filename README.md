@@ -90,7 +90,19 @@ render(<App />, createRootFragment(document.body, children));
 
 This library works with Preact 10 and 11.
 
+Preact 11 creates new DOM nodes from the container's `ownerDocument` and reorders keyed children with [`moveBefore()`](https://developer.mozilla.org/en-US/docs/Web/API/Element/moveBefore) where the browser supports it, calling both on the persistent fragment. Use a release that includes the changes listed under "Unreleased" below with Preact 11.
+
 ### Changelog
+
+#### Unreleased
+
+- support Preact 11 moving keyed children with `moveBefore()` (previously threw `moveBefore is not a function` in browsers that implement it)
+- create root children in the parent's namespace, e.g. when the parent is an `<svg>`
+- accept Preact 11 prereleases in `peerDependencies`
+
+#### 0.3.1 (2025-09-16)
+
+- support Preact 11 creating nodes from the container's `ownerDocument`
 
 #### 0.2.0 (2022-03-04)
 
